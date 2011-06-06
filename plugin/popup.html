@@ -9,40 +9,14 @@ body {
 
 <script type="text/javascript" src="https://www.google.com/jsapi"></script>
 <script>
-    function runContentScript() {
-        chrome.tabs.executeScript(null, {file: "contentscript.js"});
-    }
+  
+    var ready = false;
     
-    // Transform the JSON style object that contans key-value
-    // pairs of font data into sorted array (in descending order)
-    // that contains {font_family:'sss', count:'111'} tupples.
-    function getSortedFontData(fontData) {
-        var sortedArray = [];
-        for (var item in fontData) {
-            sortedArray.push({font_family:item, count:Number(fontData[item])});
-        }
-        
-        // Sort in descending order
-        sortedArray.sort(function(a, b) {
-            if (a.count < b.count ) {
-                return 1;
-            } else if (a.count > b.count) {
-                return -1;
-            } else {
-                return 0;
-            }
-        });
-        
-        return sortedArray;
+    function visualizationReady() {
+        ready = true;
     } 
     
     function onRequestResponder(request, sender, sendResponse) {
-        // var font_familyInfo = getSortedFontData(request);
-        // 
-        // for (var i = 0; i < font_familyInfo.length; i++) {
-        //     addRow(font_familyInfo[i].font_family, font_familyInfo[i].count);
-        // }
-        
         var data = new google.visualization.DataTable();
         data.addColumn('string', 'font-family computed style');
         data.addColumn('number', 'Count');
@@ -66,23 +40,21 @@ body {
         var countCell = row.insertCell(1);
         countCell.textContent = count;
     }
-    
+
+    // chrome.extension.onRequest.addListener(onRequestResponder);
     google.load('visualization', '1', {packages:['table']});
-    google.setOnLoadCallback(runContentScript);
+    google.setOnLoadCallback(visualizationReady);
     
-    chrome.extension.onRequest.addListener(onRequestResponder);
-    // runContentScript();
+    function gatherForUrl() {
+        chrome.extension.sendRequest({'url': url.value});
+        console.log('Sending URL request: ' + url.value);
+    }
 </script>
 <head>
 <body>
     <div id="vis"></div>
-    <!-- <table id="fontData">
-        <thead>
-            <tr>
-                <th>'font-family' declaration
-                <th>Count
-        <tbody>
-    </table> -->
-    <!-- <input type=BUTTON onclick="runContentScript()" value="Gather Stats"> -->
+    
+    <input type="text" value="http://www.wired.com" id="url" />
+    <input type="button" value="Get Stats" onclick="gatherForUrl()" />
 </body>
 </html>

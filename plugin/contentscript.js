@@ -1,3 +1,9 @@
+window.addEventListener("load", function() {
+    console.log("Page has loaded, let's collect our data")
+
+    chrome.extension.sendRequest(computeHistogram(gatherNodes()))
+}, false);
+
 function gatherNodes() {
     var bodyNodes = document.body.getElementsByTagName('*');
     var textNodes = [];
@@ -29,7 +35,6 @@ function computeHistogram(onNodes) {
         }
     }
     
-    return font_familyHistogram;
+    return {'url': document.location.href,
+            'histogram': font_familyHistogram};
 }
-
-chrome.extension.sendRequest(computeHistogram(gatherNodes()));

@@ -5,6 +5,7 @@ using System.Runtime.Serialization;
 using System.ServiceModel;
 using System.ServiceModel.Web;
 using System.Text;
+using System.Web.Script.Services;
 
 namespace Typegeist.Server.Dispatcher
 {
@@ -15,12 +16,19 @@ namespace Typegeist.Server.Dispatcher
         [OperationContract]
         [WebInvoke(
             Method = "POST",
+            RequestFormat = WebMessageFormat.Json,
+            ResponseFormat = WebMessageFormat.Json,
             BodyStyle = WebMessageBodyStyle.Bare
         )]
         void SubmitResult(TypegeistResult result);
 
         [OperationContract]
-        [WebGet]
+        [WebInvoke(
+            Method = "GET",
+            RequestFormat = WebMessageFormat.Json,
+            ResponseFormat = WebMessageFormat.Json,
+            BodyStyle = WebMessageBodyStyle.Bare
+        )]
         string GetData(int value);
     }
 

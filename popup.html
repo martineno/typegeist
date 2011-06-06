@@ -1,0 +1,88 @@
+<html>
+<head>
+<style>
+body {
+  min-width:357px;
+  overflow-x:hidden;
+}
+</style>
+
+<script type="text/javascript" src="https://www.google.com/jsapi"></script>
+<script>
+    function runContentScript() {
+        chrome.tabs.executeScript(null, {file: "contentscript.js"});
+    }
+    
+    // Transform the JSON style object that contans key-value
+    // pairs of font data into sorted array (in descending order)
+    // that contains {font_family:'sss', count:'111'} tupples.
+    function getSortedFontData(fontData) {
+        var sortedArray = [];
+        for (var item in fontData) {
+            sortedArray.push({font_family:item, count:Number(fontData[item])});
+        }
+        
+        // Sort in descending order
+        sortedArray.sort(function(a, b) {
+            if (a.count < b.count ) {
+                return 1;
+            } else if (a.count > b.count) {
+                return -1;
+            } else {
+                return 0;
+            }
+        });
+        
+        return sortedArray;
+    } 
+    
+    function onRequestResponder(request, sender, sendResponse) {
+        // var font_familyInfo = getSortedFontData(request);
+        // 
+        // for (var i = 0; i < font_familyInfo.length; i++) {
+        //     addRow(font_familyInfo[i].font_family, font_familyInfo[i].count);
+        // }
+        
+        var data = new google.visualization.DataTable();
+        data.addColumn('string', 'font-family computed style');
+        data.addColumn('number', 'Count');
+
+        for (var font_family in request) {
+            data.addRow([font_family, Number(request[font_family])]);
+        }
+        
+        visualization = new google.visualization.Table(document.getElementById('vis'));
+        visualization.draw(data, null);       
+    }
+
+    function addRow(font_family, count) {
+        var table = document.getElementById('fontData');
+        var rowCount = table.rows.length;
+        var row = table.insertRow(rowCount);
+        
+        var font_familyCell = row.insertCell(0);
+        font_familyCell.textContent = font_family;
+        
+        var countCell = row.insertCell(1);
+        countCell.textContent = count;
+    }
+    
+    google.load('visualization', '1', {packages:['table']});
+    google.setOnLoadCallback(runContentScript);
+    
+    chrome.extension.onRequest.addListener(onRequestResponder);
+    // runContentScript();
+</script>
+<head>
+<body>
+    <div id="vis"></div>
+    <!-- <table id="fontData">
+        <thead>
+            <tr>
+                <th>'font-family' declaration
+                <th>Count
+        <tbody>
+    </table> -->
+    <!-- <input type=BUTTON onclick="runContentScript()" value="Gather Stats"> -->
+</body>
+</html>

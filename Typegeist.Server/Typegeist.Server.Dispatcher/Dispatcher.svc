@@ -1,0 +1,1 @@
+﻿<%@ ServiceHost Language="C#" Debug="true" Service="Typegeist.Server.Dispatcher.Dispatcher" CodeBehind="Dispatcher.svc.cs" %>

@@ -1,19 +1,59 @@
 <html>
 <head>
 <script>
-    // function runContentScript() {
-    //     chrome.tabs.executeScript(null, {file: "contentscript.js"})
-    // }
-    // 
-    // function onRequestResponder(request, sender, sendResponse) {
-    //     console.log("Font Histogram: ");
-    //     for (var prop in request) {
-    //         console.log(prop + ": " + request[prop]);
-    //     }
-    // }
-    // 
-    // chrome.browserAction.onClicked.addListener(runContentScript);
-    // chrome.extension.onRequest.addListener(onRequestResponder);    
+    var requestWorkUrl = "http://localhost/";
+    var sendWorkUrl = "http://localhost";
+    
+    // Registered callback that is invoked once the target page
+    // loads and all the font information is gathered
+    function onRequestResponder(request, sender, sendResponse) {
+        if (request.histogram) {
+            console.log('URL: ' + request.url + " histogram: " + JSON.stringify(request.histogram));
+            sendResults(request);
+        } else {
+            console.log('Requesting histogram for URL: ' + request.url)
+            gatherFontStats(request.url)
+        }
+
+    }
+    
+    chrome.extension.onRequest.addListener(onRequestResponder);
+
+    // Get a URL from the service
+    
+    function retrieveWork() {
+        var xhr = new XMLHttpRequest();
+        xhr.open("GET", requestWorkUrl, true);
+        xhr.onreadystatechange = function () {
+            if (xhr.readyState == 4 && xhr.status == 200) {
+                var url = xhr.responseText;
+                gatherFontStats(url);
+                console.log('Retrieved work unit. URL: ' + url);
+            } else if (xhr.readyState == 4) {
+                console.log('Unable to retrieve work. Responde code: ' + xhr.status);
+            }
+        }
+        
+        xhr.send()
+    }
+
+    function gatherFontStats(url) {
+        chrome.tabs.create({'url': url, 'selected':true});
+    }
+    
+    function sendResults(results) {
+        var xhr = new XMLHttpRequest();
+        xhr.open("POST", sendWorkUrl, true);
+        xhr.onreadystatechange = function () {
+            if (xhr.readyState == 4 && xhr.status == 200) {
+                console.log("Sent results for URL:" + results.url);
+            } else if (xhr.readyState == 4) {
+                console.log("Failed to send results for URL: " + results.url + " Code: " + xhr.status);
+            }
+        }
+        
+        xhr.send(JSON.stringify(results));
+    }
 </script>
 </head>
 <body>

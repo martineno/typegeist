@@ -19,7 +19,12 @@ namespace Typegeist.Server.Dispatcher
 
         public void SubmitResult(TypegeistResult result)
         {
-            Debug.WriteLine("SubmitResult!");
+            Debug.WriteLine("SubmitResult! URL: {0}. {1} font families:", result.Url, result.FontFamilies.Count);
+
+            foreach (FontFamilyData family in result.FontFamilies)
+            {
+                Debug.WriteLine("\t{0}: {1}", family.Family, family.Count);
+            }
         }
     }
 }

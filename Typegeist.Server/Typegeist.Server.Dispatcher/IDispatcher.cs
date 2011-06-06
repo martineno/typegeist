@@ -21,17 +21,17 @@ namespace Typegeist.Server.Dispatcher
             BodyStyle = WebMessageBodyStyle.Bare
         )]
         void SubmitResult(TypegeistResult result);
-
-        [OperationContract]
-        [WebInvoke(
-            Method = "GET",
-            RequestFormat = WebMessageFormat.Json,
-            ResponseFormat = WebMessageFormat.Json,
-            BodyStyle = WebMessageBodyStyle.Bare
-        )]
-        string GetData(int value);
     }
 
+    [DataContract]
+    public class FontFamilyData
+    {
+        [DataMember]
+        public string Family { get; set; }
+
+        [DataMember]
+        public int Count { get; set; }
+    }
 
     [DataContract]
     public class TypegeistResult
@@ -40,6 +40,6 @@ namespace Typegeist.Server.Dispatcher
         public string Url { get; set; }
 
         [DataMember]
-        public Dictionary<string, int> FontFamilyCount { get; set; }
+        public List<FontFamilyData> FontFamilies { get; set; }
     }
 }

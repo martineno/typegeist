@@ -1,0 +1,113 @@
+
+-- --------------------------------------------------
+-- Entity Designer DDL Script for SQL Server Compact Edition
+-- --------------------------------------------------
+-- Date Created: 06/06/2011 20:03:58
+-- Generated from EDMX file: C:\Users\Colin Bayer\documents\typegeist\Typegeist.Server\Typegeist.Server.Data\TypegeistDataSet.edmx
+-- --------------------------------------------------
+
+
+-- --------------------------------------------------
+-- Dropping existing FOREIGN KEY constraints
+-- NOTE: if the constraint does not exist, an ignorable error will be reported.
+-- --------------------------------------------------
+
+
+-- --------------------------------------------------
+-- Dropping existing tables
+-- NOTE: if the table does not exist, an ignorable error will be reported.
+-- --------------------------------------------------
+
+
+-- --------------------------------------------------
+-- Creating all tables
+-- --------------------------------------------------
+
+-- Creating table 'Workunits'
+CREATE TABLE [Workunits] (
+    [Guid] uniqueidentifier  NOT NULL,
+    [Url] nvarchar(4000)  NOT NULL
+);
+GO
+
+-- Creating table 'ClientResults'
+CREATE TABLE [ClientResults] (
+    [Guid] uniqueidentifier  NOT NULL,
+    [Url] nvarchar(4000)  NOT NULL,
+    [ReturnTime] datetime  NOT NULL
+);
+GO
+
+-- Creating table 'ResultStatements'
+CREATE TABLE [ResultStatements] (
+    [ClientResultGuid] uniqueidentifier  NOT NULL,
+    [Guid] uniqueidentifier  NOT NULL
+);
+GO
+
+-- Creating table 'ResultStatements_FontFallbackStatement'
+CREATE TABLE [ResultStatements_FontFallbackStatement] (
+    [FontFallback] nvarchar(4000)  NOT NULL,
+    [Count] int  NOT NULL,
+    [Guid] uniqueidentifier  NOT NULL
+);
+GO
+
+-- --------------------------------------------------
+-- Creating all PRIMARY KEY constraints
+-- --------------------------------------------------
+
+-- Creating primary key on [Guid] in table 'Workunits'
+ALTER TABLE [Workunits]
+ADD CONSTRAINT [PK_Workunits]
+    PRIMARY KEY ([Guid] );
+GO
+
+-- Creating primary key on [Guid] in table 'ClientResults'
+ALTER TABLE [ClientResults]
+ADD CONSTRAINT [PK_ClientResults]
+    PRIMARY KEY ([Guid] );
+GO
+
+-- Creating primary key on [Guid] in table 'ResultStatements'
+ALTER TABLE [ResultStatements]
+ADD CONSTRAINT [PK_ResultStatements]
+    PRIMARY KEY ([Guid] );
+GO
+
+-- Creating primary key on [Guid] in table 'ResultStatements_FontFallbackStatement'
+ALTER TABLE [ResultStatements_FontFallbackStatement]
+ADD CONSTRAINT [PK_ResultStatements_FontFallbackStatement]
+    PRIMARY KEY ([Guid] );
+GO
+
+-- --------------------------------------------------
+-- Creating all FOREIGN KEY constraints
+-- --------------------------------------------------
+
+-- Creating foreign key on [ClientResultGuid] in table 'ResultStatements'
+ALTER TABLE [ResultStatements]
+ADD CONSTRAINT [FK_ClientResultResultStatement]
+    FOREIGN KEY ([ClientResultGuid])
+    REFERENCES [ClientResults]
+        ([Guid])
+    ON DELETE NO ACTION ON UPDATE NO ACTION;
+
+-- Creating non-clustered index for FOREIGN KEY 'FK_ClientResultResultStatement'
+CREATE INDEX [IX_FK_ClientResultResultStatement]
+ON [ResultStatements]
+    ([ClientResultGuid]);
+GO
+
+-- Creating foreign key on [Guid] in table 'ResultStatements_FontFallbackStatement'
+ALTER TABLE [ResultStatements_FontFallbackStatement]
+ADD CONSTRAINT [FK_FontFallbackStatement_inherits_ResultStatement]
+    FOREIGN KEY ([Guid])
+    REFERENCES [ResultStatements]
+        ([Guid])
+    ON DELETE NO ACTION ON UPDATE NO ACTION;
+GO
+
+-- --------------------------------------------------
+-- Script has ended
+-- --------------------------------------------------

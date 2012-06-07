@@ -1,8 +1,5 @@
 var webpage = require('webpage');
 
-var styleOfInterest = 
-    [ 'font-family', 'font-size', 'font-style', 'font-variant', 'font-weight' ];
-
 console.log('hey what\'s up');
 
 console.log('phantom.injectjs: ' + phantom.injectJs('./jquery.min.js'));
@@ -12,6 +9,9 @@ console.log('jquery: ' + $);
 function processPage() {
     var allElements = document.querySelectorAll('*'),
         styleDigest = {};
+    var styleOfInterest = 
+        [ 'font-family', 'font-size', 'font-style', 'font-variant', 
+          'font-weight' ];
 
     var getStyles = function(element) {
         var computedStyle = window.getComputedStyle(element);
@@ -50,11 +50,12 @@ function processPage() {
 
         // count the number of characters included within this element alone
         // (unlike innerText, this doesn't include descendants)
-        var text = $.grep(element.childNodes, 
-            function (node) { return node.nodeType === Node.TEXT_NODE; });
+        var children = element.childNodes;
 
-        for (var i = 0; i < text.length; i++) {
-            styles.characters += text[i].length;
+        for (var i = 0; i < children.length; i++) {
+            if (children[i].nodeType === Node.TEXT_NODE) {
+                styles.characters += children[i].length;
+            }
         }
 
         styles.elements++;

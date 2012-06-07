@@ -1,5 +1,7 @@
 var webpage = require('webpage');
 
+var styleOfInterest = [ 'font-family', 'font-size', 'font-style', 'font-variant', 'font-weight' ];
+
 console.log('hey what\'s up');
 
 console.log('phantom.injectjs: ' + phantom.injectJs('./jquery.min.js'));
@@ -7,28 +9,59 @@ console.log('phantom.injectjs: ' + phantom.injectJs('./jquery.min.js'));
 console.log('jquery: ' + $);
 
 function processPage() {
-    // Get all the elements
     var allElements = document.querySelectorAll('*'),
-        fonts = {
-            fontNames: {},
-            fontSizes: {}
-        },
-        computedStyle;
+        styleDigest = {};
 
-    var incOrCreate = function(object, property) {
-        if (object[property] === undefined) {
-            object[property] = 1;
-        } else {
-            object[property]++;
+    var getStyles = function(element) {
+        var computedStyle = window.getComputedStyle(element);
+        var style = {};
+
+        for (var i = 0; i < styleOfInterest.length; i++) {
+            style[styleOfInterest[i]] = computedStyle[styleOfInterest[i]];
         }
+
+        return style;
+    };
+
+    var buildStyleString = function(element) {
+        var computedStyle = window.getComputedStyle(element);
+        var result = "";
+
+        for (var i = 0; i < styleOfInterest.length; i++) {
+            result += "/" + computedStyle[styleOfInterest[i]].toLowerCase();
+        }
+
+        return result;
+    };
+
+    var updateAccounting = function(element) {
+        var styleString = buildStyleString(element),
+            styles;
+
+        if (styleDigest[styleString] === undefined) {
+            styles = getStyles(element);
+            styles.characters = styles.elements = 0;
+        } else {
+            styles = styleDigest[styleString];
+        }
+
+        var text = $.grep(element.childNodes, function (node) { return node.nodeType == Node.TEXT_NODE; });
+
+        for (var i = 0; i < text.length; i++) {
+            styles.characters += text[i].length;
+        }
+
+        styles.elements++;
+
+        styleDigest[styleString] = styles;
+        return styles;
     };
 
     for (var i = 0; i < allElements.length; i++) {
-        computedStyle = window.getComputedStyle(allElements[i]);
-        incOrCreate(fonts.fontNames, computedStyle['font-family']);
-        incOrCreate(fonts.fontSizes, computedStyle['font-size']);
+        updateAccounting(allElements[i]);
     }
-    return fonts;
+
+    return styleDigest;
 }
 
 function submit_wu(work_unit) {
@@ -74,15 +107,6 @@ function spider(uri, wuid) {
             // For troubleshooting, saves a pic of the page
             // page.render(url + '.png');
         });
-}
-
-function sleep(milliseconds) {
-  var start = new Date().getTime();
-  for (var i = 0; i < 1e7; i++) {
-    if ((new Date().getTime() - start) > milliseconds){
-      break;
-    }
-  }
 }
 
 // main loop: call the spider API, get a workunit, process that workunit, submit that workunit

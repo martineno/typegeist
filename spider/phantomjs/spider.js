@@ -1,6 +1,7 @@
 var webpage = require('webpage');
 
-var styleOfInterest = [ 'font-family', 'font-size', 'font-style', 'font-variant', 'font-weight' ];
+var styleOfInterest = 
+    [ 'font-family', 'font-size', 'font-style', 'font-variant', 'font-weight' ];
 
 console.log('hey what\'s up');
 
@@ -23,6 +24,8 @@ function processPage() {
         return style;
     };
 
+    // merge all of the styles of interest into a single string so we can 
+    // search for identical sets without walking a tree or something
     var buildStyleString = function(element) {
         var computedStyle = window.getComputedStyle(element);
         var result = "";
@@ -45,7 +48,10 @@ function processPage() {
             styles = styleDigest[styleString];
         }
 
-        var text = $.grep(element.childNodes, function (node) { return node.nodeType == Node.TEXT_NODE; });
+        // count the number of characters included within this element alone
+        // (unlike innerText, this doesn't include descendants)
+        var text = $.grep(element.childNodes, 
+            function (node) { return node.nodeType === Node.TEXT_NODE; });
 
         for (var i = 0; i < text.length; i++) {
             styles.characters += text[i].length;
@@ -61,7 +67,15 @@ function processPage() {
         updateAccounting(allElements[i]);
     }
 
-    return styleDigest;
+    // pull out all of the style strings, since they're redundant information
+    // now no longer used for identifying matching styles
+    compactDigest = [];
+
+    for (var styleString in styleDigest) {
+        compactDigest = compactDigest.concat(styleDigest[styleString]);
+    }
+
+    return compactDigest;
 }
 
 function submit_wu(work_unit) {
@@ -88,8 +102,7 @@ function spider(uri, wuid) {
                 site: uri,
                 retrievedOn: new Date(),
                 status: 'failed',
-                fontNames: {},
-                fontSizes: {}
+                styleDigest: {}
             }
             if (status !== 'success') {
                 console.log(JSON.stringify(siteFontRecord));
@@ -97,8 +110,7 @@ function spider(uri, wuid) {
                 // Evaluate runs a script in the context of a page.
                 var fontSpec = page.evaluate(processPage);
 
-                siteFontRecord.fontNames = fontSpec.fontNames;
-                siteFontRecord.fontSizes = fontSpec.fontSizes;
+                siteFontRecord.styleDigest = fontSpec;
                 siteFontRecord.status = 'success';
                 console.log(JSON.stringify(siteFontRecord));
             }
@@ -109,7 +121,8 @@ function spider(uri, wuid) {
         });
 }
 
-// main loop: call the spider API, get a workunit, process that workunit, submit that workunit
+// main loop: call the spider API, get a workunit, process that workunit, 
+// submit that workunit
 console.log('new xhr: ' + new XMLHttpRequest());
 
 var api_endpoint = 'http://localhost:9292/api'; 

@@ -1,9 +1,16 @@
+require "date"
 require "json"
 require "securerandom"
 require "sinatra"
+require "sequel"
 
 $workqueue = open("../assets/top1000.csv").read.split
 $open_wus = {}
+
+DB = Sequel.connect("sqlite://test.db")
+require "../model/scrape"
+
+Statuses = { "success" => 1, "failed" => 0 }
 
 class SpiderApi < Sinatra::Base
 	get '/' do
@@ -49,6 +56,24 @@ class SpiderApi < Sinatra::Base
 
     		if open_wu == work_unit["site"] then
     			puts "uri check passed"
+
+                scrape = Scrape.create(:status => Statuses[work_unit["status"]],
+                                       :uri => work_unit["site"],
+                                       :time_accessed => DateTime.parse(work_unit["retrievedOn"]))
+
+                if work_unit["styleDigest"] then
+                    work_unit["styleDigest"].each do |style|
+                        style = Style.create(:font_family => style["font-family"],
+                                             :font_size => style["font-size"],
+                                             :font_style => style["font-style"],
+                                             :font_variant => style["font-variant"],
+                                             :font_weight => style["font-weight"],
+                                             :characters => style["characters"],
+                                             :elements => style["elements"])
+
+                        scrape.add_style(style)
+                    end
+                end
 
     			$open_wus.delete(wuid)
     		end

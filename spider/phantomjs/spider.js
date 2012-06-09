@@ -6,6 +6,41 @@ console.log('phantom.injectjs: ' + phantom.injectJs('./jquery.min.js'));
 
 console.log('jquery: ' + $);
 
+function submit_wu(uri, wuid, work_unit) {
+    work_unit.site = uri;
+    work_unit.wuid = wuid;
+
+	$.ajax({ url: api_endpoint + '/work', 
+		type: 'POST',
+		dataType: 'json',
+		data: { work_unit: work_unit },
+		success: function (json) {
+			console.log('XHR succeeded: ' + JSON.stringify(json));
+            do_next_wu();
+		},
+		error: function() {
+			console.log('XHR failed');
+		}
+		});
+}
+
+function spider(uri, wuid) {
+	var page = webpage.create();
+
+    page.onConsoleMessage = function(msg) {
+        if (msg.indexOf("/* STYLE RESULT */") !== -1) {
+            styleDigest = JSON.parse(msg)[0];
+            console.log("got a style result!");
+            submit_wu(uri, wuid, styleDigest);
+        } else {
+            console.log('PAGE: ' + msg);
+        }
+    };
+
+    page.onInitialized = function() {
+        page.evaluate(function () { 
+
+var page_js = function(uri, wuid) {
 function processPage() {
     var allElements = document.querySelectorAll('*'),
         styleDigest = {};
@@ -79,47 +114,37 @@ function processPage() {
     return compactDigest;
 }
 
-function submit_wu(work_unit) {
-	$.ajax({ url: api_endpoint + '/work', 
-		type: 'POST',
-		dataType: 'json',
-		data: { work_unit: work_unit },
-		success: function (json) {
-			console.log('XHR succeeded: ' + JSON.stringify(json));
-		},
-		error: function() {
-			console.log('XHR failed');
-		}
-		});
-}
+document.addEventListener('DOMContentLoaded', function() {
+    var siteFontRecord = {
+        retrievedOn: new Date(),
+        status: 'failed',
+        styleDigest: {}
+    }
 
-function spider(uri, wuid) {
-	var page = webpage.create();
+    // Evaluate runs a script in the context of a page.
+    var fontSpec = processPage();
 
-	page.open(uri, 
-		function (status) {
-            var siteFontRecord = {
-            	wuid: wuid,
-                site: uri,
-                retrievedOn: new Date(),
-                status: 'failed',
-                styleDigest: {}
-            }
-            if (status !== 'success') {
-                console.log(JSON.stringify(siteFontRecord));
-            } else {
-                // Evaluate runs a script in the context of a page.
-                var fontSpec = page.evaluate(processPage);
+    siteFontRecord.styleDigest = fontSpec;
+    siteFontRecord.status = 'success';
+    siteFontRecord.magic = "/* STYLE RESULT */";
 
-                siteFontRecord.styleDigest = fontSpec;
-                siteFontRecord.status = 'success';
-                console.log(JSON.stringify(siteFontRecord));
-            }
+    console.log(JSON.stringify([siteFontRecord]));
 
-            submit_wu(siteFontRecord);
-            // For troubleshooting, saves a pic of the page
-            // page.render(url + '.png');
-        });
+    // For troubleshooting, saves a pic of the page
+    // page.render(url + '.png');
+}, false);
+};
+
+            page_js(window.tgUri, window.tgWuid) });
+    };
+
+	page.open(uri, function (status) { 
+        if (status !== 'success')
+        {
+            console.log("failed to open page");
+            do_next_wu();
+        }
+    });
 }
 
 // main loop: call the spider API, get a workunit, process that workunit, 
@@ -131,13 +156,13 @@ var api_endpoint = 'http://localhost:9292/api';
 function do_next_wu() {
 	// use jquery ajax to fetch from the spider API
 	// console.log('doing xhr to ' + api_endpoint);
+    console.log('do_next_wu');
 	$.ajax({ url: api_endpoint + '/work', 
 		dataType: 'json',
 		success: function (json) {
 			console.log('XHR succeeded: ' + JSON.stringify(json));
 			console.log('spidering ' + json.uri);
 			spider(json.uri, json.work_unit);
-			do_next_wu();
 		},
 		error: function() {
 			console.log('XHR failed');

@@ -27,7 +27,12 @@ class SpiderApi < Sinatra::Base
 
         # remove the front of the work queue and put it on the back
         domain = $workqueue.shift
-        $workqueue.push(domain)
+
+        if domain.nil? then
+            400
+        end
+
+        #$workqueue.push(domain)
 
         # make the URI
         uri = URI::HTTP.build({ :host => domain })
@@ -57,12 +62,14 @@ class SpiderApi < Sinatra::Base
     		if open_wu == work_unit["site"] then
     			puts "uri check passed"
 
+                retrievedOn = work_unit["retrievedOn"].nil? ? DateTime.now : DateTime.parse(work_unit["retrievedOn"])
+
                 scrape = Scrape.create(:status => Statuses[work_unit["status"]],
                                        :uri => work_unit["site"],
-                                       :time_accessed => DateTime.parse(work_unit["retrievedOn"]))
+                                       :time_accessed => retrievedOn)
 
                 if work_unit["styleDigest"] then
-                    work_unit["styleDigest"].each do |style|
+                    work_unit["styleDigest"].values.each do |style|
                         style = Style.create(:font_family => style["font-family"],
                                              :font_size => style["font-size"],
                                              :font_style => style["font-style"],

@@ -6,6 +6,7 @@ class Node
 
     attr_reader :graph
     attr_accessor :name
+    attr_accessor :weight
 end
 
 class Edge
@@ -78,6 +79,7 @@ def node_for_font_family(g, name)
     if node.nil? then
         node = Node.new(g)
         node.name = name
+        node.weight = 0
     end
 
     return node
@@ -121,6 +123,7 @@ def dominator_graph(dbUri)
 
             # get node
             node = node_for_font_family(dg, family)
+            node.weight += style.characters
 
             # add dominance relationships
             dominators.each { |dom| dominate(dg, dom, node, style.characters) }
@@ -135,28 +138,40 @@ end
 
 def reduced_dominator_graph(dbUri)
     domgraph = dominator_graph(dbUri)
+    
+    loop do
+        early_exit = false
 
-    domgraph.edges.each do |edge|
-        if edge.from == edge.to then
-            domgraph.delete_edge(edge)
+        domgraph.edges.each do |edge|
+            if edge.from == edge.to then
+                domgraph.delete_edge(edge)
+            end
+
+            # look for opposing edges, change edge pair, delete if necessary,
+            # restart
+            opposing = domgraph.edge(edge.to, edge.from)
+
+            if opposing then
+                self_weight = edge.weight
+                opposing_weight = opposing.weight
+
+                edge.weight = self_weight - opposing_weight
+                opposing.weight = opposing_weight - self_weight
+
+                if edge.weight <= 0 then
+                    domgraph.delete_edge(edge)
+                elsif opposing.weight <= 0 then
+                    domgraph.delete_edge(opposing)
+                end
+
+                # we removed an edge, so we need to restart the pruning process
+                early_exit = true
+                break
+            end
         end
 
-        # look for opposing edges, change edge pair, delete if necessary,
-        # restart
-        opposing = domgraph.edge(edge.to, edge.from)
-
-        if opposing then
-            self_weight = edge.weight
-            opposing_weight = opposing.weight
-
-            edge.weight = self_weight - opposing_weight
-            opposing.weight = opposing_weight - self_weight
-
-            if edge.weight <= 0 then
-                domgraph.delete_edge(edge)
-            elsif opposing.weight <= 0 then
-                domgraph.delete_edge(opposing)
-            end
+        if !early_exit then
+            break
         end
     end
 
@@ -186,4 +201,39 @@ def print_in_edges(g, name)
     puts "#{name}"
 
     nil
+end
+
+def graphvize(g, n, sigma_0)
+    require 'graphviz'
+
+    gvg = GraphViz.new(:G, :type => :digraph, :path => "C:/Program Files (x86)/Graphviz 2.28/bin")
+    gv_nodes = {}
+
+    # copy nodes into graphviz graph
+    # only copy the most popular n fonts
+    model_nodes = g.nodes.sort {|a,b| b.weight <=> a.weight}
+
+    model_nodes.take(n).each do |node|
+        gv_node = gvg.add_nodes(node.name)
+        gv_nodes[node] = gv_node
+    end
+
+    # copy edges into graphviz graph
+    # only copy edges with a weight greater than sigma_0
+    g.edges.each do |edge|
+        if gv_nodes[edge.from] && gv_nodes[edge.to] && edge.weight > sigma_0 then
+            gvg.add_edges(gv_nodes[edge.from], gv_nodes[edge.to])
+        end
+    end
+
+    return gvg
+end
+
+if __FILE__ == $0 then
+    # being executed from the command line.
+    # first argument is a scrape database, second is a filename to output a 
+    # graph to, third is the number of nodes to put in the graph
+    domgraph = reduced_dominator_graph(ARGV[0])
+    graphviz_graph = graphvize(domgraph, ARGV[2].to_i, ARGV[3].to_i)
+    graphviz_graph.output(:png => ARGV[1])
 end

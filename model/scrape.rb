@@ -1,7 +1,7 @@
 require "sequel"
 
-def init_model
-    DB.create_table? :scrapes do
+def init_model(db = DB)
+    db.create_table? :scrapes do
         primary_key :id
 
         column :status, :integer
@@ -9,7 +9,7 @@ def init_model
         column :time_accessed, :datetime
     end
 
-    DB.create_table? :styles do
+    db.create_table? :styles do
         primary_key :id
 
         column :font_family, :string
@@ -24,8 +24,6 @@ def init_model
         foreign_key :scrape_id, :scrapes
     end
 end
-
-init_model
 
 class Scrape < Sequel::Model
     one_to_many :styles

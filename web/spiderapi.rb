@@ -9,6 +9,7 @@ $open_wus = {}
 
 DB = Sequel.connect("sqlite://test.db")
 require "../model/scrape"
+init_model
 
 Statuses = { "success" => 1, "failed" => 0 }
 

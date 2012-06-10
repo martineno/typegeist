@@ -1,0 +1,12 @@
+GEM
+  remote: http://rubygems.org/
+  specs:
+    ruby-graphviz (1.0.5)
+    sequel (3.36.1)
+
+PLATFORMS
+  x86-mingw32
+
+DEPENDENCIES
+  ruby-graphviz
+  sequel

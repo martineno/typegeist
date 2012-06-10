@@ -3,6 +3,14 @@ class Node
         graph.nodes << self
     end
 
+    def project_into(other_graph)
+        projection = Node.new(other_graph)
+        projection.name = self.name
+        projection.weight = self.weight
+
+        return projection
+    end
+
     attr_accessor :name
     attr_accessor :weight
 end
@@ -10,6 +18,15 @@ end
 class Edge
     def initialize(graph)
         graph.edges << self
+    end
+
+    def project_into(other_graph, node_projection)
+        projection = Edge.new(other_graph)
+        projection.from = node_projection[self.from]
+        projection.to = node_projection[self.to]
+        projection.weight = self.weight
+
+        return projection
     end
 
     attr_accessor :from, :to
@@ -208,10 +225,7 @@ def select_subgraph_naive(args)
     model_nodes = graph.nodes.sort {|a,b| b.weight <=> a.weight}
 
     model_nodes.take(n).each do |node|
-        subgraph_node = Node.new(subgraph)
-        subgraph_node.name = node.name
-        subgraph_node.weight = node.weight
-
+        subgraph_node = node.project_into(subgraph)
         subgraph_nodes[node] = subgraph_node
     end
 
@@ -220,10 +234,49 @@ def select_subgraph_naive(args)
     graph.edges.each do |edge|
         if subgraph_nodes[edge.from] && 
                 subgraph_nodes[edge.to] && edge.weight > sigma_0 then
-            subgraph_edge = Edge.new(subgraph)
-            subgraph_edge.from = subgraph_nodes[edge.from]
-            subgraph_edge.to = subgraph_nodes[edge.to]
-            subgraph_edge.weight = edge.weight
+            edge.project_into(subgraph, subgraph_nodes)
+        end
+    end
+
+    return subgraph
+end
+
+def select_subgraph_shape(args)
+    graph = args[:graph] or raise
+    n = args[:n] || 25              # number of nodes to select
+    m_node = args[:m] || 1          # number of edges to select per node
+
+    subgraph = Digraph.new
+    subgraph_nodes = {}
+    subgraph_edges = {}
+
+    # copy nodes into subgraph
+    # only copy the most popular n fonts
+    model_nodes = graph.nodes.sort {|a,b| b.weight <=> a.weight}
+
+    model_nodes.take(n).each do |node|
+        subgraph_node = node.project_into(subgraph)
+        subgraph_nodes[node] = subgraph_node
+    end
+
+    # copy edges into subgraph
+    # only copy the highest-weight m_node in-edges and out-edges per node
+    #
+    # note: separate block because we need to ensure all the nodes have
+    # projected first
+    model_nodes.take(n).each do |node|
+        in_edges = graph.edges.select { |edge| edge.to == node && subgraph_nodes[edge.from] && !subgraph_edges[edge] }
+        out_edges = graph.edges.select { |edge| edge.from == node && subgraph_nodes[edge.to] && !subgraph_edges[edge] }
+
+        in_edges.sort! {|a,b| b.weight <=> a.weight}
+        out_edges.sort! {|a,b| b.weight <=> a.weight}
+
+        in_edges.take(m_node).each do |edge|
+            subgraph_edges[edge] = edge.project_into(subgraph, subgraph_nodes)
+        end
+
+        out_edges.take(m_node).each do |edge|
+            subgraph_edges[edge] = edge.project_into(subgraph, subgraph_nodes)
         end
     end
 
@@ -235,14 +288,21 @@ def graphvize(g, mode, n, sigma_0)
     require 'htmlentities'
 
     gvg = GraphViz.new(:G, :type => :digraph, :path => "C:/Program Files (x86)/Graphviz 2.28/bin")
-    gvg.node[:fontname] = "Segoe UI"
+
+    gvg.graph[:bgcolor] = "#656565"
+
+    gvg.node[:fontname] = "Segoe UI Bold"
     gvg.node[:fontsize] = 16
+    gvg.node[:shape] = "plaintext"
+    gvg.node[:penwidth] = 3
+    gvg.node[:color] = gvg.edge[:color] = "#D0D0D0"
+    gvg.node[:fontcolor] = "#D0D0D0"
 
     gv_nodes = {}
 
     encoder = HTMLEntities.new
 
-    g = select_subgraph_naive(:graph => g, :n => n, :sigma_0 => sigma_0)
+    g = select_subgraph_shape(:graph => g, :n => n)
 
     # copy nodes into graphviz graph
     g.nodes.each do |node|

@@ -195,23 +195,57 @@ def print_in_edges(g, name)
     nil
 end
 
-def graphvize(g, n, sigma_0)
+def select_subgraph_naive(args)
+    graph = args[:graph] or raise
+    n = args[:n] or 25
+    sigma_0 = args[:sigma_0] or 50000
+
+    subgraph = Digraph.new
+    subgraph_nodes = {}
+
+    # copy nodes into subgraph
+    # only copy the most popular n fonts
+    model_nodes = graph.nodes.sort {|a,b| b.weight <=> a.weight}
+
+    model_nodes.take(n).each do |node|
+        subgraph_node = Node.new(subgraph)
+        subgraph_node.name = node.name
+        subgraph_node.weight = node.weight
+
+        subgraph_nodes[node] = subgraph_node
+    end
+
+    # copy edges into subgraph
+    # only copy edges with a weight greater than sigma_0
+    graph.edges.each do |edge|
+        if subgraph_nodes[edge.from] && 
+                subgraph_nodes[edge.to] && edge.weight > sigma_0 then
+            subgraph_edge = Edge.new(subgraph)
+            subgraph_edge.from = subgraph_nodes[edge.from]
+            subgraph_edge.to = subgraph_nodes[edge.to]
+            subgraph_edge.weight = edge.weight
+        end
+    end
+
+    return subgraph
+end
+
+def graphvize(g, mode, n, sigma_0)
     require 'graphviz'
     require 'htmlentities'
 
     gvg = GraphViz.new(:G, :type => :digraph, :path => "C:/Program Files (x86)/Graphviz 2.28/bin")
     gvg.node[:fontname] = "Segoe UI"
-    gvg.node[:shape] = "box"
+    gvg.node[:fontsize] = 16
 
     gv_nodes = {}
 
     encoder = HTMLEntities.new
 
-    # copy nodes into graphviz graph
-    # only copy the most popular n fonts
-    model_nodes = g.nodes.sort {|a,b| b.weight <=> a.weight}
+    g = select_subgraph_naive(:graph => g, :n => n, :sigma_0 => sigma_0)
 
-    model_nodes.take(n).each do |node|
+    # copy nodes into graphviz graph
+    g.nodes.each do |node|
         # graphviz expects unicode names to be output as html entities; convert
         # now
         encodedName = encoder.encode(node.name, :decimal)
@@ -220,11 +254,8 @@ def graphvize(g, n, sigma_0)
     end
 
     # copy edges into graphviz graph
-    # only copy edges with a weight greater than sigma_0
     g.edges.each do |edge|
-        if gv_nodes[edge.from] && gv_nodes[edge.to] && edge.weight > sigma_0 then
-            gvg.add_edges(gv_nodes[edge.from], gv_nodes[edge.to])
-        end
+        gvg.add_edges(gv_nodes[edge.from], gv_nodes[edge.to])
     end
 
     return gvg
@@ -235,6 +266,6 @@ if __FILE__ == $0 then
     # first argument is a scrape database, second is a filename to output a 
     # graph to, third is the number of nodes to put in the graph
     domgraph = reduced_dominator_graph(ARGV[0])
-    graphviz_graph = graphvize(domgraph, ARGV[2].to_i, ARGV[3].to_i)
+    graphviz_graph = graphvize(domgraph, 'naive', ARGV[2].to_i, ARGV[3].to_i)
     graphviz_graph.output(:svg => ARGV[1])
 end

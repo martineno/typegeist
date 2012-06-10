@@ -1,21 +1,17 @@
 class Node
     def initialize(graph)
-        @graph = graph
         graph.nodes << self
     end
 
-    attr_reader :graph
     attr_accessor :name
     attr_accessor :weight
 end
 
 class Edge
     def initialize(graph)
-        @graph = graph
         graph.edges << self
     end
 
-    attr_reader :graph
     attr_accessor :from, :to
     attr_accessor :weight
 end
@@ -45,15 +41,11 @@ class Digraph
     end
 
     def delete_node(node)
-        if node.graph == self then
-            self.nodes.delete(node)
-        end
+        self.nodes.delete(node)
     end
 
     def delete_edge(edge)
-        if edge.graph == self then
-            self.edges.delete(edge)
-        end
+        self.edges.delete(edge)
     end
 
     attr_accessor :nodes, :edges
@@ -205,16 +197,25 @@ end
 
 def graphvize(g, n, sigma_0)
     require 'graphviz'
+    require 'htmlentities'
 
     gvg = GraphViz.new(:G, :type => :digraph, :path => "C:/Program Files (x86)/Graphviz 2.28/bin")
+    gvg.node[:fontname] = "Segoe UI"
+    gvg.node[:shape] = "box"
+
     gv_nodes = {}
+
+    encoder = HTMLEntities.new
 
     # copy nodes into graphviz graph
     # only copy the most popular n fonts
     model_nodes = g.nodes.sort {|a,b| b.weight <=> a.weight}
 
     model_nodes.take(n).each do |node|
-        gv_node = gvg.add_nodes(node.name)
+        # graphviz expects unicode names to be output as html entities; convert
+        # now
+        encodedName = encoder.encode(node.name, :decimal)
+        gv_node = gvg.add_nodes(encodedName)
         gv_nodes[node] = gv_node
     end
 
@@ -235,5 +236,5 @@ if __FILE__ == $0 then
     # graph to, third is the number of nodes to put in the graph
     domgraph = reduced_dominator_graph(ARGV[0])
     graphviz_graph = graphvize(domgraph, ARGV[2].to_i, ARGV[3].to_i)
-    graphviz_graph.output(:png => ARGV[1])
+    graphviz_graph.output(:svg => ARGV[1])
 end

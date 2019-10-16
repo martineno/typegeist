@@ -23,7 +23,7 @@ async function getFontDescription(url, browser) {
   const fontDescription = await page.$$eval('body *', el => el.map( e => {
     return window.getComputedStyle(e).getPropertyValue('font');
   }));
-
+  page.close();
   return {
     url,
     fontDescription: _.uniq(fontDescription),
@@ -49,7 +49,7 @@ async function getDescriptionForDomains(domains, browser) {
 
 (async () => {
   const browser = await puppeteer.launch();
-  const domainsToExamine = _.take(await parseCsv('./assets/top1000.csv'), 5);
+  const domainsToExamine = _.take(await parseCsv('./assets/top1000.csv'), 100);
   const domainsFontDescriptions = await getDescriptionForDomains(domainsToExamine, browser);
   await fsP.writeFile('./fontData.json', JSON.stringify(domainsFontDescriptions));
   await browser.close();

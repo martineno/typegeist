@@ -3,6 +3,8 @@ import _ from 'lodash';
 import parse from 'csv-parse';
 import { promises as fsP} from 'fs';
 
+const VERBOSE = true;
+
 async function parseCsv(path) {
   const domainsRaw = await fsP.readFile(path);
   const domainsParsed = await new Promise((resolve, reject) => {
@@ -21,12 +23,35 @@ async function getFontDescription(url, browser) {
   const page = await browser.newPage();
   await page.goto(url);
   const fontDescription = await page.$$eval('body *', el => el.map( e => {
-    return window.getComputedStyle(e).getPropertyValue('font');
+    const cssProps = [
+      'font-style',
+      'font-variant',
+      'font-weight',
+      'font-stretch',
+      'line-height',
+      'font-size',
+      'font-family',
+      // Technically the above properties contain this, but we can
+      // conveniently use this as a key to do dedupe the list of rules
+      'font',
+    ];
+    const elComputedStyle = window.getComputedStyle(e);
+    const fontData = cssProps.map(cssProp => {
+      const propValue = elComputedStyle[cssProp];
+      if (cssProp === 'font-family') {
+        return [cssProp, propValue.split(',').map(font => font.trim())];
+      }
+
+      return [cssProp, propValue];
+    });
+    return Object.fromEntries(fontData);
   }));
   page.close();
   return {
     url,
-    fontDescription: _.uniq(fontDescription),
+    // Remove duplicate rules using the full 'font' shorthand declaration
+    // as a key
+    fontDescription: _.uniqBy(fontDescription, 'font'),
   };
 }
 
@@ -37,6 +62,9 @@ async function getDescriptionForDomains(domains, browser) {
     try {
       console.log(`Now processing ${domain}`);
       const { fontDescription } = await getFontDescription(domain, browser);
+      if (VERBOSE) {
+        console.log(fontDescription);
+      }
       examinedDomains[domain] = fontDescription;
     } catch (e) {
       console.error(`Unabled to process domain ${domain} due to error ${e}`);

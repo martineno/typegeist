@@ -1,0 +1,19 @@
+{
+  "name": "typegeist",
+  "version": "0.0.1",
+  "description": "",
+  "module": "main.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node --experimental-modules main.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "csv-parse": "^4.6.3",
+    "esm": "^3.2.25",
+    "lodash": "^4.17.15",
+    "puppeteer": "^1.20.0"
+  }
+}

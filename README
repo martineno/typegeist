@@ -1,3 +1,0 @@
-Phantomjs
-
-Now includes an initial script for PhantomJS (http://phantomjs.org/) that tries to extract font data from a given page. It can be given a list of URLs (sample top 1000 provided).

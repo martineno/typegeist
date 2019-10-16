@@ -1,5 +1,0 @@
-source :rubygems
-
-gem "sequel"
-gem "ruby-graphviz"
-gem "htmlentities"
